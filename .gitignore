@@ -1,2 +1,10 @@
 .vscode
 /node_modules/
+.env
+web3_roadmap.md
+.gitmodules
+lib/
+out/
+cache/
+.vscode
+broadcast
