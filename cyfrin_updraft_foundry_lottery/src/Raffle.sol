@@ -35,6 +35,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__RandomWordsError();
     error Raffle__PayFailed();
     error Raffle__NoParticipants();
+    error Raffle__LessThanInterval();
 
     /* state variable declaration */
     uint256 private immutable i_ticketPrice;
@@ -45,6 +46,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     mapping(address => bool) public s_participants;
     address[] public s_participantsArr;
     RaffleState private s_state;
+    uint256 private s_lastRevealDate;
     uint16 private constant VRF_CONFIRMATION = 3;
     uint32 private constant VRD_CALLBACK_GAS_LIMIT = 100_000;
 
@@ -57,6 +59,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         i_keyHash = keyHash;
         i_owner = msg.sender;
         s_state = RaffleState.OPEN;
+        s_lastRevealDate = block.timestamp;
     }
 
     function participate() external payable {
@@ -90,6 +93,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert Raffle__NotOpen();
         } else if (s_participantsArr.length == 0) {
             revert Raffle__NoParticipants();
+        } else if (block.timestamp - s_lastRevealDate < i_lotteryRoundInterval) {
+            revert Raffle__LessThanInterval();
         }
 
         // 2. change the state to revealing
