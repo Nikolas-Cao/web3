@@ -7,10 +7,12 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Vote
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
-contract MyERC20 is ERC20, ERC20Permit, ERC20Pausable, ERC20Votes, Ownable {
+contract MyERC20 is ERC20Permit, ERC20Pausable, ERC20Votes, Ownable {
     mapping(address => bool) private _blacklist;
 
     event BlackListUpdate(address indexed user, bool value);
+
+    error MyERC20__AddressInBlackList(address);
 
     constructor(string memory name, string memory symbol, uint initialSupply)
         ERC20(name, symbol)
@@ -45,9 +47,12 @@ contract MyERC20 is ERC20, ERC20Permit, ERC20Pausable, ERC20Votes, Ownable {
      */
     function _update(address from, address to, uint256 value) internal 
     override(ERC20, ERC20Pausable, ERC20Votes) whenNotPaused {
-        require(!_blacklist[from], "sender is in blacklist");
-        require(!_blacklist[to], "to is in blacklist");
-        ERC20._update(from, to, value);
+        if (_blacklist[from]) {
+            revert MyERC20__AddressInBlackList(from);
+        } else if (_blacklist[to]) {
+            revert MyERC20__AddressInBlackList(to);
+        }
+        ERC20Votes._update(from, to, value);
     }
 
     function nonces(address owner) public view override(ERC20Permit, Nonces)
