@@ -28,7 +28,9 @@ contract MyERC20Test is Test {
         vm.assertEq(balance, INIT_BALANCE * 10 ** erc20.decimals());
     }
 
+    /*********************/
     /* test for transfer */
+    /*********************/
     function testTransferSuccess() external{
         // if just call vm.prank , it will fail , because msg.sender is contractOwner
         // only for `erc20.decimals()`
@@ -149,5 +151,68 @@ contract MyERC20Test is Test {
         assertEq(erc20.getPastVotes(userA.addr, pastTimeB), 80 ether);
 
         vm.stopPrank();
+    }
+
+    /******************/
+    /* test for pause */
+    /******************/
+    function testPauseSuccess() external {
+        vm.startPrank(contractOwner.addr);
+        erc20.pause();
+        assertEq(erc20.paused(), true);
+        vm.stopPrank();
+    }
+
+    function testPauseFailedBecauseInvalidUserCall() external {
+        vm.startPrank(userA.addr);
+        vm.expectRevert();
+        erc20.pause();
+        vm.stopPrank();
+    }
+
+    function testPauseFailedBecauseAlreadyPaused() external {
+        vm.startPrank(contractOwner.addr);
+        erc20.pause();
+        vm.expectRevert();
+        erc20.pause();
+        vm.stopPrank();
+    }
+
+    function testTransferFailedBecauseOfPause() external {
+        vm.startPrank(contractOwner.addr);
+        erc20.transfer(userA.addr, 1 ether);
+
+        erc20.pause();
+        vm.expectRevert();
+        erc20.transfer(userA.addr, 1 ether);
+
+        vm.stopPrank();
+    }
+
+    /********************/
+    /* test for unpause */
+    /********************/
+    function testUnpauseSuccess() external {
+        vm.startPrank(contractOwner.addr);
+        erc20.pause();
+        vm.assertEq(erc20.paused(), true);
+        erc20.unpause();
+        vm.assertEq(erc20.paused(), false);
+        vm.stopPrank();
+    }
+
+    function testUnpauseFailedBecauseNotOwner() external {
+        vm.startPrank(contractOwner.addr);
+        erc20.pause();
+        vm.stopPrank();
+
+        vm.startPrank(userA.addr);
+        vm.expectRevert();
+        erc20.unpause();
+        vm.stopPrank();
+    }
+
+    function testGetNonce() external {
+        vm.assertEq(erc20.nonces(contractOwner.addr), 0);
     }
 }
